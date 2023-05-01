@@ -43,22 +43,43 @@ class UserRepository extends BaseRepository
 
     public function createOrUpdate($id = null, $request)
     { 
-        $model = is_null($id) ? new User : User::findOrFail($id);
-        $model->user_type = $request['role'];
-        $model->name = $request['name'];
-        $model->company_id = $request['company_id'] != '' ? $request['company_id'] : 0;
-        $model->department_id = $request['department_id'] != '' ? $request['department_id'] : 0;
-        $model->email = $request['email'];
-        $model->dob_or_orgid = $request['dob_or_orgid'];
-        $model->phone = $request['phone'];
-        $model->mobile = $request['mobile'];
+        $model = $id ? User::findOrFail($id) : new User;
 
-
-        if (!$id || $id && $request['password']) $model->password = bcrypt($request['password']);
-        $model->detachAllRoles();
+        $model->fill([
+            'user_type' => $request->role,
+            'name' => $request->name,
+            'company_id' => $request->company_id ?? 0,
+            'department_id' => $request->department_id ?? 0,
+            'email' => $request->email,
+            'dob_or_orgid' => $request->dob_or_orgid,
+            'phone' => $request->phone,
+            'mobile' => $request->mobile,
+        ]);
+        
+        if (!$id || ($id && $request->password)) {
+            $model->password = bcrypt($request->password);
+        }
+        
         $model->save();
-        $model->attachRole($request['role']);
-        $data = array();
+        
+        if ($id) {
+            $model->detachAllRoles();
+        }
+        
+        $model->attachRole($request->role);
+        
+        $data = $model->only([
+            'user_type',
+            'name',
+            'company_id',
+            'department_id',
+            'email',
+            'dob_or_orgid',
+            'phone',
+            'mobile',
+        ]);
+        
+        
 
         if ($request['role'] == env('CUSTOMER_ROLE_ID')) {
 

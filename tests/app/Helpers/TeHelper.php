@@ -1,4 +1,5 @@
 <?php
+
 namespace DTApi\Helpers;
 
 use Carbon\Carbon;
@@ -40,27 +41,17 @@ class TeHelper
         return $jobs;
     }
 
-    public static function willExpireAt($due_time, $created_at)
+    public static function calculateExpirationTime($due_time, $created_at)
     {
-        $due_time = Carbon::parse($due_time);
-        $created_at = Carbon::parse($created_at);
+        [$due_time, $created_at] = [Carbon::parse($due_time), Carbon::parse($created_at)];
 
-        $difference = $due_time->diffInHours($created_at);
+        $hours_since_creation = $created_at->diffInHours($due_time);
 
-
-        if($difference <= 90)
-            $time = $due_time;
-        elseif ($difference <= 24) {
-            $time = $created_at->addMinutes(90);
-        } elseif ($difference > 24 && $difference <= 72) {
-            $time = $created_at->addHours(16);
-        } else {
-            $time = $due_time->subHours(48);
-        }
-
-        return $time->format('Y-m-d H:i:s');
-
+        return $hours_since_creation <= 90
+            ? $due_time->format('Y-m-d H:i:s')
+            : ($hours_since_creation <= 24 * 3
+                ? $created_at->copy()->addHours(16)
+                : $due_time->copy()->subHours(48)
+            )->format('Y-m-d H:i:s');
     }
-
 }
-
